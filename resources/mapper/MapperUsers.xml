@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper 
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+
+<mapper namespace="com.mycom.sixclub.service.dao.UsersDAO">
+	<!-- 회원정보 가져오기 -->
+	<select id="getUserinfo" resultType="UsersVO">
+		SELECT * FROM Users
+		WHERE
+		user_no = #{user_no}
+	</select>
+
+	<!-- 전체 회원정보 가져오기 -->
+	<select id="getAllinfo" resultType="UsersVO"> 
+		SELECT * FROM Users
+		WHERE user_no != 99999
+		ORDER BY user_no
+	</select>
+	<select id="getAllinfo_pag" resultType="UsersVO"> 
+		SELECT * 
+		FROM ( 
+			SELECT ROWNUM AS rnum, u.* 
+			FROM ( 
+				SELECT * 
+				FROM Users 
+				WHERE user_no != 99999 
+				ORDER BY user_no 
+			) u 
+			WHERE ROWNUM &lt;= #{endRow} 
+		) 
+		WHERE rnum &gt;= #{startRow} 
+	</select>
+
+	<!-- 회원정보 가져오기_이름으로 -->
+	<select id="getUserinfo_name" resultType="UsersVO">
+		SELECT * FROM Users
+		WHERE user_name=#{user_name} and phone=#{phone}
+	</select>
+
+	<!-- 회원정보 가져오기 아이디로 -->
+	<select id="getUserinfo_id" resultType="UsersVO">
+		SELECT * FROM Users
+		WHERE
+		user_id = #{user_id}
+	</select>
+
+	<!-- 회원가입 -->
+	<insert id="insertUser">
+		INSERT INTO Users
+		VALUES (member_seq.NEXTVAL, #{user_id}, #{passwd}, #{user_name}, #{gender}, #{birthday}, #{height},
+		#{weight}, #{address}, #{email}, #{phone},#{salt})
+	</insert>
+
+
+	<!-- 회원 passwd 수정하기 -->
+	<update id="updateUser_pwinfo">
+		UPDATE Users SET passwd=#{passwd}, salt=#{salt}
+		WHERE
+		user_id = #{user_id}
+	</update>
+
+	<!-- 유저 정보 수정 -->
+	<update id="updateUser" parameterType="UsersVO"> 
+		UPDATE Users 
+		SET height=#{height}, weight=#{weight}, email=#{email}, address=#{address}, phone=#{phone} 
+		WHERE user_no=#{user_no} 
+	</update>
+
+	<!-- 유저 삭제 -->
+	<delete id="deleteUser" parameterType="int">
+		DELETE FROM users
+		WHERE
+		user_no=#{user_no}
+	</delete>
+
+</mapper>
+ 

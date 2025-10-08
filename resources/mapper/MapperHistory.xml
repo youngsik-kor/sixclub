@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper 
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+
+<mapper namespace="com.mycom.sixclub.service.dao.HistoryDAO">
+	
+	<!-- 가장 빠른 plan_no 1개만 선택해서 그에 해당하는 MON~SAT의 history_no들을 JOIN -->
+	<select id="selectSixDayRoutineByEarliestPlan" resultType="WorkoutVO">
+	    SELECT 
+	        w.WO_NO AS woNo,
+	        w.WO_NAME AS woName,
+	        w.WO_TYPE AS woType,
+	        g.WO_DATE AS woDate,         
+	        p.DAY_OF_WEEK AS dayOfWeek   
+	    FROM workoutplan p
+	    JOIN workouthistorygroup g ON p.HISTORY_NO = g.HISTORY_NO
+	    JOIN workouthistory h ON h.HISTORY_NO = g.HISTORY_NO
+	    JOIN workout w ON h.WO_NO = w.WO_NO
+	    WHERE p.PLAN_NO = (
+	        SELECT MIN(p2.PLAN_NO)
+	        FROM workoutplan p2
+	        JOIN workouthistorygroup g2 ON p2.HISTORY_NO = g2.HISTORY_NO
+	        WHERE g2.USER_NO = #{userNo}
+	    )
+	    AND p.DAY_OF_WEEK = #{dayOfWeek}
+	    ORDER BY w.WO_NO
+	</select>
+
+
+	<!-- 1. 사용자 전체 플랜 번호 조회 -->
+	<select id="selectAllPlanNosByUser" resultType="int">
+	    SELECT DISTINCT plan_no
+	    FROM workoutplan
+	    WHERE history_no IN (
+	        SELECT history_no FROM workouthistorygroup WHERE user_no = #{userNo}
+	    )
+	    ORDER BY plan_no
+	</select>
+
+	<!-- 2. 플랜 번호로 요일순 history_no 조회 -->
+	<select id="selectHistoryNosByPlanNo" resultType="int">
+	    SELECT history_no
+	    FROM workoutplan
+	    WHERE plan_no = #{planNo}
+	    ORDER BY day_of_week
+	</select>
+	
+	<!-- 3. 특정 history_no의 루틴 조회 -->
+	<select id="selectWorkoutsByHistoryNo" resultType="com.mycom.sixclub.service.vo.WorkoutVO">
+	    SELECT 
+	        w.wo_no   AS woNo,
+	        w.wo_name AS woName,
+	        w.wo_type AS woType,
+	        g.wo_date AS woDate
+	    FROM workouthistory h
+	    JOIN workout w ON h.wo_no = w.wo_no
+	    JOIN workouthistorygroup g ON h.history_no = g.history_no
+	    WHERE h.history_no = #{historyNo}
+	</select>
+	
+	
+	<select id="selectOneDayRoutineHistoryGroups" resultType="com.mycom.sixclub.service.vo.WorkoutVO">
+	  SELECT 
+	    WH.history_no AS historyNo,  
+	    W.WO_NO      AS woNo,
+	    W.WO_NAME    AS woName,
+	    W.WO_TYPE    AS woType,
+	    WHG.WO_DATE  AS woDate,
+	    WHG.WO_LEVEL AS woLevel
+	  FROM WorkoutHistoryGroup WHG
+	  JOIN WorkoutHistory WH ON WH.HISTORY_NO = WHG.HISTORY_NO
+	  JOIN Workout W ON WH.WO_NO = W.WO_NO
+	  WHERE WHG.USER_NO = #{userNo}
+	    AND NOT EXISTS (
+	      SELECT 1
+	      FROM WorkoutPlan WP
+	      WHERE WP.HISTORY_NO = WHG.HISTORY_NO
+	    )
+	  ORDER BY WH.history_no, WHG.wo_date
+	</select>
+	
+	<!-- 시퀀스로부터 다음 PLAN_NO 얻기 -->
+	<select id="getNextPlanId" resultType="int">
+	    SELECT WORKOUTPLAN_SEQ.NEXTVAL FROM dual
+	</select>
+	
+	<!-- getNextHistoryNo -->
+	<select id="getNextHistoryNo" resultType="int">
+	    SELECT WORKOUTHISTORY_SEQ.NEXTVAL FROM dual
+	</select>
+
+	<!-- WorkoutHistoryGroup 시퀀스 번호 -->
+	<select id="getNextHistoryGroupId" resultType="int"> 
+		SELECT WORKOUTHISTORYGROUP_SEQ.NEXTVAL FROM dual
+	</select>
+
+	<!-- WorkoutHistory 삽입 (history_group_no 포함) -->
+	<insert id="insertWorkoutHistory"> 
+		INSERT INTO WorkoutHistory (HISTORY_NO, WO_NO) VALUES (#{historyGroupNo}, #{workoutId})
+	</insert>
+	
+	<!-- WorkoutHistoryGroup 삽입 -->
+	<insert id="insertWorkoutHistoryGroup"> 
+		INSERT INTO WorkoutHistoryGroup ( HISTORY_NO, USER_NO, WO_DATE, WO_LEVEL ) 
+		VALUES ( #{historyNo}, #{userNo}, #{date}, #{woLevel} )
+	</insert>	
+	
+	<!-- WorkoutHistoryGroup 값 가져오기 -->
+	<select id="getAllWorkoutHistoryGroup" resultMap="workoutHistoryGroupResultMap"> 
+		SELECT * FROM WorkoutHistoryGroup 
+	</select>
+	
+	<resultMap id="workoutHistoryGroupResultMap" type="WorkoutHistoryGroupVO">
+		<result column="wo_level" property="woLevel"/>
+	</resultMap>
+	
+	<!--  6일루틴 개수 추출   -->
+	<select id="countWorkoutplan" resultType="int"> 
+		select count(*) from workoutplan 
+	</select>
+
+	<!--  루틴 전체 개수 추출   -->
+	<select id="countWorkouthistorygroup" resultType="int"> 
+		select count(*) from workouthistorygroup 
+	</select>
+	
+	<select id="getRecentlyPlanNo" parameterType="java.lang.Integer" resultType="int">
+		SELECT plan_no FROM (
+		    SELECT wp.plan_no
+		    FROM workoutplan wp
+		    JOIN workouthistorygroup whg ON wp.history_no = whg.history_no
+		    WHERE whg.user_no = #{userNo, jdbcType=INTEGER}
+		    ORDER BY wp.plan_no DESC
+		)
+		WHERE rownum = 1
+	</select>
+	
+	<select id="getRoutineByPlanNo" parameterType="java.lang.Integer" resultType="int">
+	    SELECT history_no
+	    FROM workoutplan
+	    WHERE plan_no = #{recentPlanNo, jdbcType=INTEGER}
+	    ORDER BY day_of_week
+	</select>
+</mapper>
+ 

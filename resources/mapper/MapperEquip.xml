@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper 
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+
+<mapper namespace="com.mycom.sixclub.service.dao.EquipDAO">
+
+	<resultMap id="equipMap" type="com.mycom.sixclub.service.vo.EquipVO">
+	    <result property="equip_no" column="equip_no"/>
+	    <result property="equip_name" column="equip_name"/>
+	    <result property="equip_desc" column="equip_desc"/>
+	    <result property="equip_img" column="equip_img"/>
+	</resultMap>
+	
+	<select id="getEquipCount" resultType="int">
+	    SELECT COUNT(*) FROM equip
+	</select>
+
+	<select id="getEquip" resultMap="equipMap">
+		SELECT * 
+		FROM equip
+		WHERE equip_no=#{equip_no}
+	</select>
+
+	<update id="updateEquip" >
+		UPDATE equip
+		SET equip_name=#{equip_name}, equip_desc=#{equip_desc}, equip_img=#{equip_img}
+		WHERE equip_no=#{equip_no}
+	</update>
+
+	<delete id="deleteEquip">
+		DELETE FROM Equip
+		WHERE equip_no= #{equip_no}
+	</delete>
+	
+	<insert id="insertEquip">
+		INSERT INTO equip (equip_no, equip_name, equip_desc, equip_img)
+		VALUES (equip_seq.NEXTVAL, #{equip_name}, #{equip_desc}, #{equip_img, jdbcType=VARCHAR})
+	</insert>
+	
+	<select id="getEquipImagePath" parameterType="int" resultType="String">
+    	SELECT equip_img FROM equip WHERE equip_no = #{equip_no}
+	</select>
+
+	<select id="getAllEquip" resultType="EquipVO">
+		SELECT *
+		FROM Equip
+		ORDER BY equip_no
+	</select>
+
+	<select id="recommendWoType" resultType="int">
+		SELECT DISTINCT wo_type
+		FROM Equip e, EquipRecommend er, Workout w
+		WHERE e.equip_no = er.equip_no and er.wo_no = w.wo_no and e.equip_no = #{equip_no}
+		GROUP BY wo_type
+		ORDER BY wo_type
+	</select>
+	
+	<select id="getEquipPaging" resultMap="equipMap"
+		parameterType="map">
+		<![CDATA[
+			SELECT * FROM (
+			    SELECT inner.*, ROWNUM AS rn
+			    FROM (
+			        SELECT * FROM equip
+			        ORDER BY equip_no
+			    ) inner
+			    WHERE ROWNUM <= #{offset} + #{pageSize}
+			)
+			WHERE rn > #{offset}
+		]]>
+	</select>
+
+
+</mapper>
+ 

@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper 
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+
+<mapper namespace="com.mycom.sixclub.service.dao.RoutineDAO">
+	<resultMap id="workoutMap"
+		type="com.mycom.sixclub.service.vo.WorkoutVO">
+		<result property="woNo" column="wo_no" />
+		<result property="woName" column="wo_name" />
+		<result property="woType" column="wo_type" />
+	</resultMap>
+
+	<select id="getWorkoutCount" resultType="int">
+	    SELECT COUNT(*) FROM Workout
+	</select>
+
+	<select id="getAllWorkout" resultMap="workoutMap">
+		SELECT *
+		FROM workout
+		ORDER
+		BY wo_type
+	</select>
+
+	<select id="getWorkout" resultMap="workoutMap">
+		SELECT *
+		FROM workout
+		WHERE wo_No=#{woNo}
+	</select>
+
+	<update id="updateWorkout">
+		UPDATE workout
+		SET wo_type = #{woType}
+		, wo_name=#{woName}
+		WHERE wo_no=#{woNo}
+	</update>
+
+	<delete id="deleteWorkout">
+		DELETE FROM workout
+		WHERE wo_no= #{woNo}
+	</delete>
+
+	<select id="getWorkoutPaging" resultMap="workoutMap"
+		parameterType="map">
+		<![CDATA[
+			SELECT * FROM (
+			    SELECT inner.*, ROWNUM AS rn
+			    FROM (
+			        SELECT * FROM workout
+			        ORDER BY wo_no
+			    ) inner
+			    WHERE ROWNUM <= #{offset} + #{pageSize}
+			)
+			WHERE rn > #{offset}
+		]]>
+	</select>
+
+	<insert id="insertWorkout">
+		INSERT INTO workout (wo_no, wo_name, wo_type)
+		VALUES (workout_seq.NEXTVAL, #{woName}, #{woType})
+	</insert>
+
+	<!-- 인터벌 루틴 조회 (랜덤 15개) -->
+	<select id="getRoutine_in" resultType="WorkOutVO">
+		<![CDATA[ 
+		SELECT WO_NO AS woNo, WO_NAME AS woName, WO_TYPE AS woType 
+		FROM ( 
+			SELECT * FROM Workout 
+			WHERE wo_type = 0 
+			ORDER BY DBMS_RANDOM.VALUE 
+		) 
+		WHERE ROWNUM <= 15 
+		]]>
+	</select>
+	
+	<!-- 웨이트 루틴 - 가슴/삼두 (Main) -->
+	<select id="getRoutine_we_ch_main" parameterType="int" resultType="WorkOutVO">
+		<![CDATA[ 
+		SELECT * 
+		FROM ( 
+			SELECT WO_NO AS woNo, WO_NAME AS woName, WO_TYPE AS woType 
+			FROM WORKOUT 
+			WHERE WO_TYPE IN (1) 
+			ORDER BY DBMS_RANDOM.VALUE 
+		) 
+		WHERE ROWNUM <= #{count} 
+		]]>
+	</select>
+	
+	<!-- 웨이트 루틴 - 가슴/삼두 (Sub) -->
+	<select id="getRoutine_we_ch_sub" parameterType="int" resultType="WorkOutVO">
+		<![CDATA[ 
+		SELECT * 
+		FROM ( 
+			SELECT WO_NO AS woNo, WO_NAME AS woName, WO_TYPE AS woType 
+			FROM WORKOUT 
+			WHERE WO_TYPE IN (6) 
+			ORDER BY DBMS_RANDOM.VALUE 
+		) 
+		WHERE ROWNUM <= #{count} 
+		]]>
+	</select>
+	
+	<!-- 웨이트 루틴 - 등/이두 (Main) -->
+	<select id="getRoutine_we_ba_main" parameterType="int" resultType="WorkOutVO">
+		<![CDATA[ 
+		SELECT * 
+		FROM ( 
+			SELECT WO_NO AS woNo, WO_NAME AS woName, WO_TYPE AS woType 
+			FROM WORKOUT 
+			WHERE WO_TYPE IN (2) 
+			ORDER BY DBMS_RANDOM.VALUE 
+		) 
+		WHERE ROWNUM <= #{count} 
+		]]>
+	</select>
+	
+	<!-- 웨이트 루틴 - 등/이두 (Sub) -->
+	<select id="getRoutine_we_ba_sub" parameterType="int" resultType="WorkOutVO">
+		<![CDATA[ 
+		SELECT * 
+		FROM ( 
+			SELECT WO_NO AS woNo, WO_NAME AS woName, WO_TYPE AS woType 
+			FROM WORKOUT WHERE WO_TYPE IN (5) 
+			ORDER BY DBMS_RANDOM.VALUE 
+		) 
+		WHERE ROWNUM <= #{count} 
+		]]>
+	</select>
+	
+	<!-- 웨이트 루틴 - 하체/어깨 (Main) -->
+	<select id="getRoutine_we_le_main" parameterType="int" resultType="WorkOutVO">
+		<![CDATA[ 
+		SELECT * 
+		FROM ( 
+			SELECT WO_NO AS woNo, WO_NAME AS woName, WO_TYPE AS woType 
+			FROM WORKOUT 
+			WHERE WO_TYPE IN (4) 
+			ORDER BY DBMS_RANDOM.VALUE 
+		) 
+		WHERE ROWNUM <= #{count} 
+		]]>
+	</select>
+	
+	<!-- 웨이트 루틴 - 하체/어깨 (Sub) -->
+	<select id="getRoutine_we_le_sub" parameterType="int" resultType="WorkOutVO">
+		<![CDATA[ 
+		SELECT * 
+		FROM ( 
+			SELECT WO_NO AS woNo, WO_NAME AS woName, WO_TYPE AS woType 
+			FROM WORKOUT WHERE WO_TYPE IN (3) 
+			ORDER BY DBMS_RANDOM.VALUE 
+		) 
+		WHERE ROWNUM <= #{count} 
+		]]>
+	</select>
+	
+	<!-- WorkoutPlan 삽입 -->
+	<insert id="insertWorkoutPlan"> 
+		INSERT INTO WorkoutPlan (plan_no, day_of_week, history_no) 
+		VALUES (#{planNo}, #{dayOfWeek}, #{historyNo})
+	</insert>
+	
+	<select id="getWorkoutPagingByType" resultMap="workoutMap" parameterType="map">
+    <![CDATA[
+        SELECT * FROM (
+            SELECT inner.*, ROWNUM AS rn
+            FROM (
+                SELECT * FROM workout
+                WHERE wo_type = #{woType}
+                ORDER BY wo_no
+            ) inner
+            WHERE ROWNUM <= #{offset} + #{pageSize}
+        )
+        WHERE rn > #{offset}
+    ]]>
+	</select>
+	
+	<select id="getWorkoutCountByType" resultType="int" parameterType="int">
+    	SELECT COUNT(*) FROM workout WHERE wo_type = #{woType}
+	</select>
+	
+</mapper>
+ 

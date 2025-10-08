@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper 
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+
+<mapper namespace="com.mycom.sixclub.service.dao.SubscribeDAO">
+	<!-- 구독 날짜 저장 -->
+	<insert id="subInsert"> 
+		INSERT INTO subscribe (subscribe_no, user_no, start_date, end_date) 
+		VALUES (subscribe_seq.nextval, #{user_no}, #{start_date}, #{end_date}) 
+	</insert>
+	<update id="subSave" parameterType="SubscribeVO"> 
+		UPDATE subscribe 
+		SET start_date=#{start_date}, end_date=#{end_date} 
+		WHERE user_no=#{user_no}
+	</update>
+	
+	<!-- 구독 여부 확인 -->
+	<select id="getSubscribe" resultType="SubscribeVO"> 
+		SELECT * 
+		FROM Users u
+		JOIN Subscribe s ON u.user_no = s.user_no
+		WHERE SYSDATE &lt;= end_date and u.user_no = #{user_no}
+	</select>
+	
+	<!-- 특정 user의 구독 히스토리 불러오기 -->
+	<select id="getSubscribeHistory" resultType="SubscribeVO"> 
+		SELECT   *
+		FROM Subscribe s, Users u
+		WHERE  s.user_no = #{user_no} and u.user_no = s.user_no
+		ORDER BY s.start_date desc
+	</select>
+	
+	<!--  구독 중인 사람 수  -->
+	<select id="getSubscribeUserNum" resultType="int"> 
+		SELECT count(*)
+		FROM Subscribe 
+		WHERE SYSDATE &lt; end_date 
+	</select>
+	
+	<!-- 재구독한 사람 수 -->
+	<select id="getReSubscribeNum" resultType="int"> 		
+		SELECT nvl(COUNT(*),0) FROM (
+			SELECT User_no
+			FROM Subscribe
+			GROUP BY User_no
+			HAVING COUNT(*) > 1 )	
+	</select>
+	
+	<!-- 구독테이블에 있는 회원 수(중복 제거) -->
+	<select id="getAllSubscribeNum" resultType="int"> 		
+		SELECT COUNT(DISTINCT User_no) FROM Subscribe	
+	</select>
+
+	<!-- 구독테이블에 있는 최근 구독 회원 정보 추출-->	
+	<select id="getNewSubscribe" resultType="SubscribeVO"> 		
+		SELECT u.USER_NAME, s.START_DATE
+		FROM (
+			 SELECT *
+			 FROM(
+			    SELECT *
+			    FROM Subscribe
+			    ORDER BY START_DATE DESC
+				)
+			WHERE 3 >= ROWNUM 
+		) s, Users u
+		WHERE s.USER_NO = u.USER_NO
+	</select>
+	
+	<!-- 구독테이블 전체 조회 -->
+	<select id="getAllSubscribe" resultType="SubscribeVO"> 
+		SELECT * FROM Subscribe 
+	</select>
+</mapper>
+ 
